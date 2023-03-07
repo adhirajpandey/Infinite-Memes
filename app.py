@@ -2,8 +2,9 @@ import requests
 from flask import Flask, render_template
 import random
 
-#list of subreddits from where memes will be extracted using API
-subreddits_list = ["funny", "memes", "comedyheaven", "raimimemes", "okbuddyretard", "dankmemes", "terriblefacebookmemes", "DankExchange", "wholesomememes", "dankinindia", "TheRealJoke"]
+#create python list of subreddits from where memes will be extracted using API
+with open('subreddits.txt', 'r') as f:
+    subreddits_list = f.read().splitlines()
 
 #function to get a random meme from randomly selected subreddit from the list
 def getMeme():
