@@ -3,7 +3,7 @@ This repository contains a simple Python Web Dev Project, which is a meme webapp
 
 The page refreshes automatically every 15 seconds to get new memes. The website is responsive, allowing users to watch memes in their free time in any device. The project has been deployed using Render cloud service provider, the link is provided below.
 
-https://infinite-memes.onrender.com/
+Check it out - https://memes.adhiraj.live/
 
 ## Getting Started
 
