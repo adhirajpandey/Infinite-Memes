@@ -24,6 +24,8 @@ These instructions will get you a copy of the project up and running on your loc
 
 To run the flask application, execute the following command: `python app.py`
 
+`GET /health` returns `{"status": "ok"}` without calling the meme API. Use it for health and readiness checks.
+
 
 ## Features to be added
 
