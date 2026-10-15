@@ -33,5 +33,11 @@ def index():
     return render_template("meme_index.html", meme_pic = meme_img, subreddit = subreddit)
 
 
+#lightweight health check that does not call the meme API
+@app.route('/health')
+def health():
+    return {"status": "ok"}
+
+
 if __name__ == '__main__':
     app.run()
