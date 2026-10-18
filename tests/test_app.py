@@ -20,13 +20,17 @@ import app as application
 
 
 class AppTests(unittest.TestCase):
+    """Check homepage failure handling and the independent health handler."""
+
     def setUp(self):
+        """Create a Flask client and suppress expected failure warnings."""
         self.client = application.app.test_client()
         warning = patch.object(application.app.logger, "warning")
         warning.start()
         self.addCleanup(warning.stop)
 
     def response(self, payload):
+        """Build a mock Requests response with the supplied JSON payload."""
         response = MagicMock()
         response.__enter__.return_value = response
         response.json.return_value = payload
@@ -34,6 +38,7 @@ class AppTests(unittest.TestCase):
 
     @patch("app.requests.get")
     def test_success(self, get):
+        """Render a valid meme after one request with explicit timeouts."""
         get.return_value = self.response(
             {"subreddit": "memes", "preview": ["https://example.test/meme.jpg"]}
         )
@@ -47,6 +52,7 @@ class AppTests(unittest.TestCase):
 
     @patch("app.requests.get")
     def test_network_failures_do_not_retry(self, get):
+        """Return HTTP 503 after connection failures without retrying."""
         for error in (
             requests.ConnectTimeout(),
             requests.ReadTimeout(),
@@ -63,6 +69,7 @@ class AppTests(unittest.TestCase):
 
     @patch("app.requests.get")
     def test_http_failure_does_not_retry(self, get):
+        """Reject upstream HTTP errors before parsing their response bodies."""
         upstream = self.response({})
         upstream.raise_for_status.side_effect = requests.HTTPError()
         get.return_value = upstream
@@ -72,6 +79,7 @@ class AppTests(unittest.TestCase):
 
     @patch("app.requests.get")
     def test_invalid_payload_does_not_retry(self, get):
+        """Return HTTP 503 for missing or invalid meme fields."""
         for payload in (
             {},
             None,
@@ -89,6 +97,7 @@ class AppTests(unittest.TestCase):
 
     @patch("app.requests.get")
     def test_invalid_json(self, get):
+        """Handle an upstream response that cannot be decoded as JSON."""
         upstream = self.response(None)
         upstream.json.side_effect = ValueError("invalid JSON")
         get.return_value = upstream
@@ -99,6 +108,7 @@ class AppTests(unittest.TestCase):
         "app.requests.get", side_effect=AssertionError("unexpected upstream request")
     )
     def test_health_does_not_use_upstream(self, get):
+        """Serve health checks without making a meme API request."""
         response = self.client.get("/health")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, {"status": "ok"})
@@ -106,20 +116,26 @@ class AppTests(unittest.TestCase):
 
 
 class GunicornTests(unittest.TestCase):
+    """Exercise the production Gunicorn configuration against a local API."""
+
     def test_health_responds_while_upstream_stalls(self):
+        """Serve health checks during a stalled request, then time it out."""
         started = threading.Event()
         release = threading.Event()
         calls = []
 
         class StalledAPI(BaseHTTPRequestHandler):
+            """Accept requests but withhold a response to trigger a read timeout."""
+
             def do_GET(self):
+                """Record the request and wait until the test releases it."""
                 calls.append(self.path)
                 started.set()
                 release.wait(10)
                 self.close_connection = True
 
             def log_message(self, *args):
-                pass
+                """Suppress HTTP server logs during the test."""
 
         upstream = ThreadingHTTPServer(("127.0.0.1", 0), StalledAPI)
         upstream_thread = threading.Thread(target=upstream.serve_forever, daemon=True)
@@ -132,6 +148,7 @@ class GunicornTests(unittest.TestCase):
         opener = build_opener(ProxyHandler({}))
 
         def request(path):
+            """Read a local app response, including HTTP error bodies."""
             try:
                 with opener.open(base + path, timeout=6) as response:
                     return response.status, response.read()

@@ -12,6 +12,7 @@ MEME_API_TIMEOUT = (2, 3)
 
 # Fetch once; the caller handles upstream failures without retrying.
 def getMeme():
+    """Fetch and validate one meme, raising on upstream or payload errors."""
     subreddit = random.choice(subreddits_list)
     with requests.get(
         MEME_API_URL + subreddit, timeout=MEME_API_TIMEOUT, allow_redirects=False
@@ -35,6 +36,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
+    """Render a meme or return an unavailable page with HTTP 503."""
     try:
         meme_img, subreddit = getMeme()
     except (requests.RequestException, ValueError, KeyError, IndexError, TypeError):
@@ -46,6 +48,7 @@ def index():
 #lightweight health check that does not call the meme API
 @app.route('/health')
 def health():
+    """Report readiness without contacting the meme API."""
     return {"status": "ok"}
 
 
