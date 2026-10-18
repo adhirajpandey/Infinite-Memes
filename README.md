@@ -26,6 +26,35 @@ To run the flask application, execute the following command: `python app.py`
 
 `GET /health` returns `{"status": "ok"}` without calling the meme API. Use it for health and readiness checks.
 
+Each page request makes one meme API request, with a 2-second connection timeout
+and a 3-second read timeout. Failures and invalid responses return HTTP 503 with
+a message; the page refreshes again after 15 seconds. Redirects are not followed.
+The read timeout limits how long the connection can go without receiving data;
+it is not a deadline for the whole request.
+
+The container runs Gunicorn with one worker and four threads, using
+`gunicorn.conf.py`. A slow meme request can occupy a thread while another serves
+`/health`. If all four threads are busy, health requests still have to wait.
+For the same behavior outside Docker, run
+`gunicorn --config gunicorn.conf.py --bind 127.0.0.1:8000 app:app`.
+
+### Tests
+
+With the dependencies installed, run `python -m unittest discover -s tests -v`.
+The tests use mocked responses and a local HTTP server, including a Gunicorn
+check that requests `/health` while the meme API is stalled. They do not call
+the public meme API.
+
+`requirements.txt` keeps setuptools below version 81 because the pinned Gunicorn
+version imports `pkg_resources`.
+
+### Deploying this change
+
+Rebuild the image to include the application and Gunicorn configuration, then
+recreate the container. For installations with a standby host, prepare the same
+version on both hosts before updating the active container. Keep readiness checks
+pointed at `/health`.
+
 
 ## Features to be added
 
