@@ -17,10 +17,14 @@
 <body onload = "JavaScript:AutoRefresh(15000);">
     <h1>Just Chill and enjoy some memes!</h1>
     <p> This will auto-refresh in 15 seconds !!</p>
+    {% if unavailable %}
+    <p>Memes are temporarily unavailable. This page will try again in 15 seconds.</p>
+    {% else %}
     <div>
         <img src="{{meme_pic}}" alt="Extracted Meme Image">
     </div>
     <p>Current Subreddit : {{subreddit}} </p>
+    {% endif %}
     
 </body>
 </html>
